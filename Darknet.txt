@@ -1,0 +1,150 @@
+def DarknetConv(x, filters, size, strides=1, batch_norm=True):
+  if strides == 1:
+    padding = 'same'
+  else:
+    x = ZeroPadding2D(((1, 0), (1, 0)))(x)
+    padding = 'valid'
+  x = Conv2D(filters=filters, 
+             kernel_size=size, 
+             strides=strides, 
+             padding=padding, 
+             use_bias=not batch_norm, 
+             kernel_regularizer=l2(0.0005), 
+             kernel_initializer='he_normal',)(x)
+  if batch_norm:
+    x = BatchNormalization()(x)
+    x = LeakyReLU(alpha=0.1)(x)
+  return x
+
+def DarknetConvResidual(x, filters):
+  y = x
+  x = DarknetConv(x, filters // 2, 1)
+  x = DarknetConv(x, filters, 3)
+  x = Add()([x, y])
+  return x
+
+def DarknetConvBlock(x, filters, blocks):
+  x = DarknetConv(x, filters, 3, strides=2)
+  for _ in range(blocks):
+    x = DarknetConvResidual(x, filters)
+  return x
+
+def Darknet53():
+  x = inputs = Input([None, None, 3])
+  x = DarknetConv(x, 32, 3)
+  x = DarknetConvBlock(x, 64, 1)
+  x = DarknetConvBlock(x, 128, 2)
+  x = x_3 = DarknetConvBlock(x, 256, 8)
+  x = x_2 = DarknetConvBlock(x, 512, 8)
+  x_1 = DarknetConvBlock(x, 1024, 4)
+  return Model(inputs, (x_3, x_2, x_1), name='Darknet53')
+
+def FPN(Conv):
+  def builder(t, filters, name=None):
+    if isinstance(t, tuple):
+      inputs = Input(t[0].shape[1:]), Input(t[1].shape[1:])
+      x, x_skip = inputs
+      x = Conv(x, filters, 1)
+      x = UpSampling2D(2)(x)
+      x = Concatenate()([x, x_skip])
+    else:
+      x = inputs = Input(t.shape[1:])
+    x = Conv(x, filters, 1)
+    x = Conv(x, filters * 2, 3)
+    x = Conv(x, filters, 1)
+    x = Conv(x, filters * 2, 3)
+    x = Conv(x, filters, 1)
+    return Model(inputs, x, name=name)(t)
+
+  def build(x_in):
+    x_1, x_2, x_3 = x_in
+    x_3 = y_3 = builder(x_3, 512, 'Scale_13')
+    x_3 = y_2 = builder((x_3, x_2), 256, 'Scale_26')
+    x_3 = y_1 = builder((x_3, x_1), 128, 'Scale_52')
+    return (y_1, y_2, y_3)
+  return build
+
+
+
+def EfficientNetV2B2():
+  EfficientNetV2S = tf.keras.applications.efficientnet_v2.EfficientNetV2B2(
+    include_top=False,
+    weights='imagenet',
+    input_tensor=None,
+    input_shape=None,
+    include_preprocessing=False,
+    classifier_activation=None)
+  x = inputs = Input([None, None, 3])
+  m = Model(inputs=EfficientNetV2S.inputs, outputs=EfficientNetV2S.get_layer('block4a_expand_activation').output)
+  n = Model(inputs=m.inputs, outputs = EfficientNetV2S.get_layer('block6a_expand_activation').output)
+  o = Model(inputs=n.inputs, outputs=(m.output, n.output, EfficientNetV2S.get_layer('top_activation').output))
+  x = o(x)
+  model = Model(inputs=inputs, outputs=x, name='EfficientNetV2B2')
+  model.trainable = False
+  return model
+
+
+def fit(model, epochs, resume=False, freeze_backbone=True, warmup=False, load_last=False, load_checkpoint=False):
+  if not resume:
+    if not freeze_backbone: model.trainable = True
+    if load_last: model.load_weights('weights_last.h5')
+    if load_checkpoint: model.load_weights('weights_checkpoint.h5')
+    fit_config = [[
+      config['NUM_classes'], 
+      config['ANCHORS'][level], 
+      config['PARAMS_GS_alpha'][level], 
+      config['PARAMS_WH_power'][level], 
+      config['PARAMS_head_scale'][level],
+      config['PARAMS_conf_scale'][level]] for level in tf.range(3)]
+    loss = [Loss(Output_Activation, *fit_config[level], name='Loss') for level in tf.range(3)]
+    
+    if warmup:
+      boundaries=[int(c*NUM_steps_per_epoch) for c in [1, 2, 3, 4, 5, 6, 7, 8, 9, 130, 180, 230]]
+      values=[1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-5, 1e-4, 1e-4, 1e-3, 0.001, 0.0003, 0.0001, 0.00005]
+
+    else:
+      boundaries=[int(c*NUM_steps_per_epoch) for c in [130, 180, 230]], 
+      values=[0.001, 0.0003, 0.0001, 0.00005]
+        
+  learning_rate = keras.optimizers.schedules.PiecewiseConstantDecay(
+      boundaries=boundaries, 
+      values=values)
+    
+  model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), jit_compile=True, steps_per_execution=1, loss=loss)
+
+  callbacks = [
+      tf.keras.callbacks.ModelCheckpoint(filepath='weights_checkpoint.h5', save_weights_only=True,  monitor='val_loss', save_best_only=True),
+      tf.keras.callbacks.CSVLogger('log.csv', separator=',', append=True)]
+
+  curr_metric = 0.0
+  hist_metric = []
+  metric_method = mAP(Dataset_Test, NUM_classes=2, per_class=False)
+    
+  for ep in tf.range(0, epochs, 5):
+    
+    history = model.fit(
+       Dataset_Train,
+       validation_data=Dataset_Valid,
+       epochs=5,
+       callbacks=callbacks,
+       steps_per_epoch=NUM_samples[0] // batch_size,
+       validation_steps=1)  
+    
+    if ep // 5 == 0:
+      ep_metric = metric_method(model)
+      hist_metric.append(ep_metric)
+      tf.print('\nmAP: ep_metric')
+      if ep_metric > curr_metric:
+        metric = ep_metric
+        model.save_weights('weights_mAP.h5')
+    
+    
+  model.save_weights('weights_last.h5')
+  return history
+
+
+#with strategy.scope():
+  #structure = [EfficientNetV2(mode='EfficientNetV2B2', trainable=True), PAN(Conv_Mish), Decoupled_Head]
+  #model = YOLOv3_MOD(*structure, config['INPUT_shape'], config['ANCHORS_shape'][1], config['NUM_classes'], training=True)
+
+history = fit(model, 230, resume=False, freeze_backbone=False, warmup=True)

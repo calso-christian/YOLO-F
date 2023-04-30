@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import math
 import gc
-import shutil
 import xml.etree.ElementTree as ET
 import albumentations as A
 import cv2 as cv
@@ -14,26 +13,13 @@ from tensorflow import keras
 from keras import Model
 from keras.regularizers import l2
 from keras.layers import (
-    Add,
     Concatenate,
     Conv2D,
     SeparableConv2D,
     Input,
-    Lambda,
-    LeakyReLU,
     MaxPool2D,
     UpSampling2D,
-    ZeroPadding2D,
     BatchNormalization)
-from keras.losses import (
-    binary_crossentropy,
-    CategoricalCrossentropy,
-    sparse_categorical_crossentropy)
-from keras.callbacks import (
-    ReduceLROnPlateau,
-    EarlyStopping,
-    ModelCheckpoint,
-    TensorBoard)
 print(tf.__version__)
 
 
@@ -76,25 +62,21 @@ def XYXY_to_YXYX(x):
     x1, y1, x2, y2 = tf.split(x[..., :4], (1, 1, 1, 1), axis=-1)
     return tf.concat([y1, x1, y2, x2], -1)
 
-
 def draw_predictions(image, boxes, scores, labels, name=None):
-    image = tf.squeeze(image)
+    image = tf.cast(tf.squeeze(image), tf.uint8)
     col = [[255, 165, 0], [106, 90, 205]]
     idx_non_zero = tf.where(scores)
-    boxes = tf.cast(XYXY_to_YXYX(tf.gather_nd(boxes, idx_non_zero))
-                    * config['INPUT_shape'][0], tf.int32)
+    boxes = tf.cast(tf.gather_nd(boxes, idx_non_zero) * config['INPUT_shape'][0], tf.int32)
     scores = tf.gather_nd(scores, idx_non_zero)
     labels = tf.gather_nd(labels, idx_non_zero)
-    zeros = tf.zeros_like(image)
-
+    zeros = tf.zeros(image.shape)
     for CLS in tf.range(config['NUM_classes']):
         idx_CLS = tf.where(tf.cast(labels, tf.int32) == CLS)
         b = tf.gather_nd(boxes, idx_CLS).numpy()
         for i in tf.range(b.shape[0]):
             start, end = b[i, :2], b[i, 2:]
-            mask = tf.cast(cv.rectangle(
-                zeros.numpy(), start, end, col[CLS], 2), tf.uint8)
-            image = tf.maximum(image * tf.cast((mask == 0), tf.uint8), mask)
+            mask = tf.cast(cv.rectangle(zeros.numpy(), start, end, col[CLS], 4), tf.uint8)
+            image = image * tf.cast((mask == 0), tf.uint8) + mask
     return image
 
 
@@ -299,7 +281,7 @@ class Post_Process(keras.layers.Layer):
         self.NUM_classes = NUM_classes
         self.max_boxes = max_boxes
         self.IoU_thresh = IoU_thresh
-        self.score_thresh = 0.55
+        self.score_thresh = score_thresh
 
     def NMS(self, outputs):
         bbox, confidence, class_probs = [], [], []
@@ -354,7 +336,7 @@ def YOLOv3_MOD(Backbone, Neck, Head, SHAPE_input, NUM_anchors, NUM_classes, trai
                                config['PARAMS_GS_alpha'][level],
                                config['PARAMS_WH_power'][level],
                                training=False)(y[level]) for level in [0, 1, 2]]
-        y = Post_Process(NUM_classes, 100, 0.45, 0.5)(y)
+        y = Post_Process(NUM_classes, 20, 0.45, 0.6)(y)
 
     return Model(inputs, y, name='YOLOv3_MOD')
 
@@ -363,4 +345,4 @@ structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(
     Conv_SiLU), Decoupled_Head]
 model = YOLOv3_MOD(*structure, config['INPUT_shape'],
                    config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
-model.load_weights('weights_last.h5')
+model.load_weights('ArrayFoo\weights_checkpoint.h5')

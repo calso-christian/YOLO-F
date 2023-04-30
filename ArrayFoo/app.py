@@ -17,16 +17,12 @@ def gen_frames():
             break
         else:
 
-            frame = tf.image.resize_with_pad(frame, 768, 768)
-            pred = model.predict(frame[tf.newaxis, ...])
-            #frame = draw_predictions(frame, pred[0], pred[1], pred[2])
-            frame = tf.image.draw_bounding_boxes(
-                frame[tf.newaxis, ...], XYXY_to_YXYX(pred[0][0][tf.newaxis, ...]), [[252.0, 3.0, 3.0], [18.0, 4.0, 217.0]])
+            frame = tf.image.resize_with_pad(frame, 768, 768)[tf.newaxis, ...]
+            pred = model.predict(frame)
+            frame = draw_predictions(frame, pred[0], pred[1], pred[2])
+            #frame = tf.image.draw_bounding_boxes(frame[tf.newaxis, ...], XYXY_to_YXYX(pred[0][0][tf.newaxis, ...]), [[252.0, 3.0, 3.0], [18.0, 4.0, 217.0]])
            
-            ret, buffer = cv2.imencode('.jpg', frame.numpy()[0])
-
-            #ret, buffer = cv2.imencode('.jpg', frame)
-
+            ret, buffer = cv2.imencode('.jpg', frame.numpy())
             frame = buffer.tobytes()
 
             yield (b'--frame\r\n'
