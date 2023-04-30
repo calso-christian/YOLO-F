@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="1024">
+    <title>Array FOO Surveillance System</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}">
+</head>
+<body>
+    <div class="main">
+        <div class="headerdiv"></div>
+        <h1 class="header">ARRAYFOO Surveillance Camera System</h1>     
+        
+        <div class="gridcontainer">
+            <div class="left">
+                <h2 class="greetings">Good day ARRAY FOO!</h2>
+                <div class="screencontainer">
+                        <img src="{{url_for('static', filename='images/cctv.svg')}}" alt="cctvlogo" class="cctvlogo">
+                        <p class="home">Home</p>
+                        <img src="{{url_for('static', filename='images/signal.svg')}}" alt="signallogo" class="signal">
+                        <img src="{{url_for('static', filename='images/LIVE.svg')}}" alt="livelogo" class="live">
+                        <p class="status">Status: Safe</p>
+                    <div class="screen">
+                        <img src="{{ url_for('videos') }}" style="height: 100%; width: 100%;"/>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="right">
+                <h3 class="clock">12:35PM</h3>
+                <h3 class="date">April 27,2023</h3>
+                <div class="alertcontainer">
+                    <img src="{{url_for('static', filename='images/siren.svg')}}" alt="siren" class="siren">
+                    <h3 class="ah">Alert History</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
