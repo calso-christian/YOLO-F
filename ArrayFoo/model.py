@@ -363,4 +363,4 @@ structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(
     Conv_SiLU), Decoupled_Head]
 model = YOLOv3_MOD(*structure, config['INPUT_shape'],
                    config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
-model.load_weights('weights_checkpoint.h5')
+model.load_weights('weights_last.h5')
