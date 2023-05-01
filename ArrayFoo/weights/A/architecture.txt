@@ -1,0 +1,8 @@
+architecture = {
+    'backbone': 'EfficientNetV2B1',
+    'SPPF_C': 480,
+    'Neck_C': [120, 240],
+    'Det_Blocks': 2,
+    'Head_Blocks': 1,
+    'Head_C': 128
+}

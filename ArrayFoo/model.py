@@ -62,11 +62,31 @@ def XYXY_to_YXYX(x):
     x1, y1, x2, y2 = tf.split(x[..., :4], (1, 1, 1, 1), axis=-1)
     return tf.concat([y1, x1, y2, x2], -1)
 
-def draw_predictions(image, boxes, scores, labels, name=None):
-    image = tf.cast(tf.squeeze(image), tf.uint8)
+def draw_predictions(image, pred_size, boxes, scores, labels, name=None):
     col = [[255, 165, 0], [106, 90, 205]]
+    image = tf.cast(tf.squeeze(image), tf.uint8)
     idx_non_zero = tf.where(scores)
-    boxes = tf.cast(tf.gather_nd(boxes, idx_non_zero) * config['INPUT_shape'][0], tf.int32)
+    if idx_non_zero.shape[0] == 0: 
+        return image
+    
+    ratio = image.shape[1] / image.shape[0]
+
+    if ratio > 0:
+        H = (1. / ratio) / 2
+        W = 0.
+
+    offset = tf.tile(tf.constant([W, H]), [2])[tf.newaxis, ...]
+
+    pad = tf.constant([
+        image.shape[1], 
+        image.shape[0]],
+        dtype=tf.float32)
+
+    pad = tf.tile(pad, [2])[tf.newaxis, ...]
+
+    boxes = tf.cast((tf.gather_nd(boxes, idx_non_zero)) * pred_size, tf.int32)
+    
+
     scores = tf.gather_nd(scores, idx_non_zero)
     labels = tf.gather_nd(labels, idx_non_zero)
     zeros = tf.zeros(image.shape)
@@ -336,7 +356,7 @@ def YOLOv3_MOD(Backbone, Neck, Head, SHAPE_input, NUM_anchors, NUM_classes, trai
                                config['PARAMS_GS_alpha'][level],
                                config['PARAMS_WH_power'][level],
                                training=False)(y[level]) for level in [0, 1, 2]]
-        y = Post_Process(NUM_classes, 20, 0.45, 0.6)(y)
+        y = Post_Process(NUM_classes, 20, 0.35, 0.55)(y)
 
     return Model(inputs, y, name='YOLOv3_MOD')
 
@@ -345,4 +365,4 @@ structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(
     Conv_SiLU), Decoupled_Head]
 model = YOLOv3_MOD(*structure, config['INPUT_shape'],
                    config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
-model.load_weights('ArrayFoo\weights_checkpoint.h5')
+model.load_weights('ArrayFoo\weights\A\A_1.h5')

@@ -1,28 +1,30 @@
 from flask import Flask, redirect, url_for, render_template, Response
-import cv2
 from model import *
 
 
 app = Flask(__name__)
 
-camera = cv2.VideoCapture(0)
+camera = cv.VideoCapture(0, cv.CAP_DSHOW)
+camera.set(cv.CAP_PROP_FRAME_WIDTH, 4000)
+camera.set(cv.CAP_PROP_FRAME_HEIGHT, 4000)
 
 def gen_frames():
 
     while True:
-
+        
         success, frame = camera.read()
-
         if not success:
             break
         else:
+            frame = cv.flip(frame, 1)
+            frame_resized = tf.image.resize_with_pad(
+                frame, config['INPUT_shape'][0], config['INPUT_shape'][0])[tf.newaxis, ...]
+            pred = model.predict(frame_resized)
+            frame = draw_predictions(frame_resized, config['INPUT_shape'][0], pred[0], pred[1], pred[2])
 
-            frame = tf.image.resize_with_pad(frame, 768, 768)[tf.newaxis, ...]
-            pred = model.predict(frame)
-            frame = draw_predictions(frame, pred[0], pred[1], pred[2])
             #frame = tf.image.draw_bounding_boxes(frame[tf.newaxis, ...], XYXY_to_YXYX(pred[0][0][tf.newaxis, ...]), [[252.0, 3.0, 3.0], [18.0, 4.0, 217.0]])
            
-            ret, buffer = cv2.imencode('.jpg', frame.numpy())
+            ret, buffer = cv.imencode('.jpg', frame.numpy())
             frame = buffer.tobytes()
 
             yield (b'--frame\r\n'
