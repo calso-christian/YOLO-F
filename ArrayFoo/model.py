@@ -372,4 +372,4 @@ def YOLOv3_MOD(Backbone, Neck, Head, SHAPE_input, NUM_anchors, NUM_classes, trai
 
 structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(Conv_SiLU), Decoupled_Head]
 model = YOLOv3_MOD(*structure, config['INPUT_shape'],config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
-model.load_weights(r"C:\Users\Kio\Desktop\Thesis\YOLO Models\YOLO-F _B\weights backup\B_C5.h5")
+model.load_weights('ArrayFoo\weights\A\A_2.h5')
