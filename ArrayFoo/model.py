@@ -369,7 +369,8 @@ def YOLOv3_MOD(Backbone, Neck, Head, SHAPE_input, NUM_anchors, NUM_classes, trai
 
     return Model(inputs, y, name='YOLOv3_MOD')
 
-
 structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(Conv_SiLU), Decoupled_Head]
 model = YOLOv3_MOD(*structure, config['INPUT_shape'],config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
-model.load_weights('ArrayFoo\weights\A\A_2.h5')
+model.load_weights(r'ArrayFoo\weights\A\A_3.h5')
+
+# Best A_2, B_5
