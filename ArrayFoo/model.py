@@ -22,6 +22,14 @@ from keras.layers import (
     BatchNormalization)
 print(tf.__version__)
 
+architecture = {
+    'backbone': 'EfficientNetV2B1',
+    'SPPF_C': 480,
+    'Neck_C': [120, 240],
+    'Det_Blocks': 2,
+    'Head_Blocks': 1,
+    'Head_C': 128
+}
 
 config = {
     'LABELS': ['W', 'C'],
@@ -39,6 +47,7 @@ config = {
     'PARAMS_conf_scale': [0.02, 0.02, 0.02],
     'RES_variations': [1088, 1024, 896, 832, 768, 704, 640]
 }
+
 directory = {
     'TRAIN_Annotations': '/kaggle/input/w-and-c-hand-signals-arrayfoo/Train/Annotations/',
     'TRAIN_Images': '/kaggle/input/w-and-c-hand-signals-arrayfoo/Train/Images/',
@@ -47,14 +56,7 @@ directory = {
     'TEST_Annotations': '/kaggle/input/w-and-c-hand-signals-arrayfoo/Test/Annotations/',
     'TEST_Images': '/kaggle/input/w-and-c-hand-signals-arrayfoo/Test/Images/',
 }
-architecture = {
-    'backbone': 'EfficientNetV2B1',
-    'SPPF_C': 480,
-    'Neck_C': [120, 240],
-    'Det_Blocks': 2,
-    'Head_Blocks': 1,
-    'Head_C': 128
-}
+
 colors = ['#FFA500', '#6A5ACD']
 
 
@@ -69,23 +71,30 @@ def draw_predictions(image, pred_size, boxes, scores, labels, name=None):
     if idx_non_zero.shape[0] == 0: 
         return image
     
-    ratio = image.shape[1] / image.shape[0]
+    img_dims = tf.cast(tf.shape(image), tf.float32)
+    ratio = img_dims[1] / img_dims[0]
 
     if ratio > 0:
-        H = (1. / ratio) / 2
-        W = 0.
+        offset = tf.tile(
+            tf.stack([
+                0.,
+                (pred_size - pred_size / ratio) / 2.]),
+                [2])[tf.newaxis, ...]
+    elif ratio < 0:
+        offset = tf.tile(
+            tf.stack([
+                (pred_size - pred_size / ratio) * 2.,
+                0.]),
+                [2])[tf.newaxis, ...]
+    else:
+        offset = tf.constant([0., 0., 0., 0.])
 
-    offset = tf.tile(tf.constant([W, H]), [2])[tf.newaxis, ...]
-
-    pad = tf.constant([
-        image.shape[1], 
-        image.shape[0]],
-        dtype=tf.float32)
+    pad = tf.stack([
+        img_dims[1] + offset[0, 0] - pred_size, 
+        img_dims[0] + offset[0, 1] - pred_size])
 
     pad = tf.tile(pad, [2])[tf.newaxis, ...]
-
-    boxes = tf.cast((tf.gather_nd(boxes, idx_non_zero)) * pred_size, tf.int32)
-    
+    boxes = tf.cast((tf.gather_nd(boxes, idx_non_zero)) * pred_size, tf.int32) # + offset - pad
 
     scores = tf.gather_nd(scores, idx_non_zero)
     labels = tf.gather_nd(labels, idx_non_zero)
@@ -361,8 +370,6 @@ def YOLOv3_MOD(Backbone, Neck, Head, SHAPE_input, NUM_anchors, NUM_classes, trai
     return Model(inputs, y, name='YOLOv3_MOD')
 
 
-structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(
-    Conv_SiLU), Decoupled_Head]
-model = YOLOv3_MOD(*structure, config['INPUT_shape'],
-                   config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
-model.load_weights('ArrayFoo\weights\A\A_1.h5')
+structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(Conv_SiLU), Decoupled_Head]
+model = YOLOv3_MOD(*structure, config['INPUT_shape'],config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
+model.load_weights(r"C:\Users\Kio\Desktop\Thesis\YOLO Models\YOLO-F _B\weights backup\B_C5.h5")
