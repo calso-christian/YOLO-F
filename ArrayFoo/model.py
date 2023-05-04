@@ -64,13 +64,14 @@ def XYXY_to_YXYX(x):
     x1, y1, x2, y2 = tf.split(x[..., :4], (1, 1, 1, 1), axis=-1)
     return tf.concat([y1, x1, y2, x2], -1)
 
+
 def draw_predictions(image, pred_size, boxes, scores, labels, name=None):
-    col = [[255, 165, 0], [106, 90, 205]]
+    col = [[60, 20, 220], [205, 90, 105]]
     image = tf.cast(tf.squeeze(image), tf.uint8)
     idx_non_zero = tf.where(scores)
-    if idx_non_zero.shape[0] == 0: 
+    if idx_non_zero.shape[0] == 0:
         return image
-    
+
     img_dims = tf.cast(tf.shape(image), tf.float32)
     ratio = img_dims[1] / img_dims[0]
 
@@ -79,22 +80,23 @@ def draw_predictions(image, pred_size, boxes, scores, labels, name=None):
             tf.stack([
                 0.,
                 (pred_size - pred_size / ratio) / 2.]),
-                [2])[tf.newaxis, ...]
+            [2])[tf.newaxis, ...]
     elif ratio < 0:
         offset = tf.tile(
             tf.stack([
                 (pred_size - pred_size / ratio) * 2.,
                 0.]),
-                [2])[tf.newaxis, ...]
+            [2])[tf.newaxis, ...]
     else:
         offset = tf.constant([0., 0., 0., 0.])
 
     pad = tf.stack([
-        img_dims[1] + offset[0, 0] - pred_size, 
+        img_dims[1] + offset[0, 0] - pred_size,
         img_dims[0] + offset[0, 1] - pred_size])
 
     pad = tf.tile(pad, [2])[tf.newaxis, ...]
-    boxes = tf.cast((tf.gather_nd(boxes, idx_non_zero)) * pred_size, tf.int32) # + offset - pad
+    boxes = tf.cast((tf.gather_nd(boxes, idx_non_zero)) *
+                    pred_size, tf.int32)  # + offset - pad
 
     scores = tf.gather_nd(scores, idx_non_zero)
     labels = tf.gather_nd(labels, idx_non_zero)
@@ -104,7 +106,8 @@ def draw_predictions(image, pred_size, boxes, scores, labels, name=None):
         b = tf.gather_nd(boxes, idx_CLS).numpy()
         for i in tf.range(b.shape[0]):
             start, end = b[i, :2], b[i, 2:]
-            mask = tf.cast(cv.rectangle(zeros.numpy(), start, end, col[CLS], 4), tf.uint8)
+            mask = tf.cast(cv.rectangle(
+                zeros.numpy(), start, end, col[CLS], 4), tf.uint8)
             image = image * tf.cast((mask == 0), tf.uint8) + mask
     return image
 
@@ -369,8 +372,12 @@ def YOLOv3_MOD(Backbone, Neck, Head, SHAPE_input, NUM_anchors, NUM_classes, trai
 
     return Model(inputs, y, name='YOLOv3_MOD')
 
-structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(Conv_SiLU), Decoupled_Head]
-model = YOLOv3_MOD(*structure, config['INPUT_shape'],config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
-model.load_weights(r'ArrayFoo\weights\A\A_3.h5')
+
+structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(
+    Conv_SiLU), Decoupled_Head]
+model = YOLOv3_MOD(*structure, config['INPUT_shape'],
+                   config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
+model.load_weights(
+    r"C:\Users\Christian Paul\Documents\GitHub\YOLO-F\ArrayFoo\weights\A\A_2.h5")
 
 # Best A_2, B_5
