@@ -1,5 +1,7 @@
 from flask import Flask, redirect, url_for, render_template, Response
 from model import *
+import time
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -12,7 +14,6 @@ camera.set(cv.CAP_PROP_FRAME_HEIGHT, 4000)
 
 
 def gen_frames():
-    #i = 0
     while True:
 
         success, frame = camera.read()
@@ -29,8 +30,15 @@ def gen_frames():
                                              [0], tf.float32),
                                      pred[0], pred[1], pred[2])
 
-            #cv.imwrite("boxed_frames/Frame" + str(i)+".jpg", frame.numpy())
-            #i += 1
+            if tf.reduce_any(pred[0][..., 0] > 0.0):
+                timestamp = time.time()
+                dt_object = datetime.fromtimestamp(timestamp)
+                strtime = str(dt_object.strftime("%Y-%m-%d_%H:%M:%S"))
+
+                print(f"Hand sign detected: " + strtime)
+                cv.imwrite("testfolder\Frame"
+                           + ".jpg", frame.numpy())
+
             #frame = tf.image.draw_bounding_boxes(frame[tf.newaxis, ...], XYXY_to_YXYX(pred[0][0][tf.newaxis, ...]), [[252.0, 3.0, 3.0], [18.0, 4.0, 217.0]])
 
             ret, buffer = cv.imencode('.jpg', frame.numpy())
