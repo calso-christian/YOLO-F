@@ -4,3 +4,4 @@ psutil
 matplotlib
 albumentations
 IPython
+pyserial
