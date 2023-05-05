@@ -70,9 +70,10 @@ def draw_predictions(image, pred_size, boxes, scores, labels, name=None):
     image = tf.cast(tf.squeeze(image), tf.uint8)
     idx_non_zero = tf.where(scores)
     if idx_non_zero.shape[0] == 0:
-        return image
+        return image, None
 
     img_dims = tf.cast(tf.shape(image), tf.float32)
+    '''
     ratio = img_dims[1] / img_dims[0]
 
     if ratio > 0:
@@ -94,13 +95,14 @@ def draw_predictions(image, pred_size, boxes, scores, labels, name=None):
         img_dims[1] + offset[0, 0] - pred_size,
         img_dims[0] + offset[0, 1] - pred_size])
 
-    pad = tf.tile(pad, [2])[tf.newaxis, ...]
+    pad = tf.tile(pad, [2])[tf.newaxis, ...] '''
     boxes = tf.cast((tf.gather_nd(boxes, idx_non_zero)) *
                     pred_size, tf.int32)  # + offset - pad
 
     scores = tf.gather_nd(scores, idx_non_zero)
     labels = tf.gather_nd(labels, idx_non_zero)
     zeros = tf.zeros(image.shape)
+    predictions = []
     for CLS in tf.range(config['NUM_classes']):
         idx_CLS = tf.where(tf.cast(labels, tf.int32) == CLS)
         b = tf.gather_nd(boxes, idx_CLS).numpy()
@@ -109,7 +111,11 @@ def draw_predictions(image, pred_size, boxes, scores, labels, name=None):
             mask = tf.cast(cv.rectangle(
                 zeros.numpy(), start, end, col[CLS], 4), tf.uint8)
             image = image * tf.cast((mask == 0), tf.uint8) + mask
-    return image
+            predictions.append(
+                (CLS, b[i])
+            )
+
+    return image, predictions
 
 
 def Conv_SiLU(x, filters, kernel_size, strides=1, depth_multiplier=1, mode='Conv2D', batch_norm=True):
@@ -378,6 +384,6 @@ structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(
 model = YOLOv3_MOD(*structure, config['INPUT_shape'],
                    config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
 model.load_weights(
-    r"C:\Users\Christian Paul\Documents\GitHub\YOLO-F\ArrayFoo\weights\A\A_2.h5")
+    r"ArrayFoo\weights\A\A_2.h5")
 
 # Best A_2, B_5
