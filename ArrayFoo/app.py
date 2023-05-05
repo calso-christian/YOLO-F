@@ -1,8 +1,8 @@
 from flask import Flask, redirect, url_for, render_template, Response
 from model import *
 import time
-import requests #for Telegram bot notifications
-#import serial.tools.list_ports #for serial connection
+import requests  # for Telegram bot notifications
+# import serial.tools.list_ports #for serial connection
 from datetime import datetime
 
 
@@ -32,6 +32,7 @@ camera = cv.VideoCapture(0, cv.CAP_DSHOW)
 camera.set(cv.CAP_PROP_FRAME_WIDTH, 4000)
 camera.set(cv.CAP_PROP_FRAME_HEIGHT, 4000)
 
+
 def gen_frames():
     while True:
 
@@ -45,40 +46,47 @@ def gen_frames():
             pred = model.predict(frame_resized, verbose=0)
 
             frame, predictions = draw_predictions(frame_resized,
-                                     tf.cast(config['INPUT_shape'][0], tf.float32),
-                                     pred[0], pred[1], pred[2])
+                                                  tf.cast(
+                                                      config['INPUT_shape'][0], tf.float32),
+                                                  pred[0], pred[1], pred[2])
             #command = "NONE"+'\r'
 
             if tf.reduce_any(pred[0][..., 0] > 0.0):
                 timestamp = time.time()
                 dt_object = datetime.fromtimestamp(timestamp)
-                strtime = str(dt_object.strftime("%Y-%m-%d_%H:%M:%S"))
-                statistics = process_predictions(predictions, config['NUM_classes'])
+                folder_name = str(dt_object.strftime("%Y-%m-%d"))
+                strtime = str(dt_object.strftime("%Y-%m-%d_%H-%M-%S"))
+                fn = "ArrayFoo\\Saved_frames" + folder_name + "\\Frame" + strtime + ".jpg"
+                print(fn)
+                statistics = process_predictions(
+                    predictions, config['NUM_classes'])
 
-                print("{}\tFound [{}] W  [{}] C".format(strtime, statistics[0], statistics[1]))
+                print("{}\tFound [{}] W  [{}] C".format(
+                    strtime, statistics[0], statistics[1]))
 
-                cv.imwrite("ArrayFoo\testfolder\Frame" + ".jpg", frame.numpy())
+                cv.imwrite(fn, frame.numpy())
                 command = "GESTURES"+'\r'
-            
+
             else:
                 command = None
-            
+
             ret, buffer = cv.imencode('.jpg', frame.numpy())
             frame = buffer.tobytes()
 
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            
-        #serialInst.write(command.encode('utf-8'))
-          
+
+        # serialInst.write(command.encode('utf-8'))
+
 
 def process_predictions(predictions, NUM_classes):
     statistics = [0 for _ in range(NUM_classes)]
     for pred in predictions:
         label = pred[0]
         statistics[label] += 1
-        ## PERFORM ARDUINO PROCESSING PER LABEL HERE
+        # PERFORM ARDUINO PROCESSING PER LABEL HERE
     return statistics
+
 
 def gen_boxframes():
     i = 0
