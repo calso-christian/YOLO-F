@@ -54,17 +54,23 @@ def gen_frames():
             if tf.reduce_any(pred[0][..., 0] > 0.0):
                 timestamp = time.time()
                 dt_object = datetime.fromtimestamp(timestamp)
+
                 folder_name = str(dt_object.strftime("%Y-%m-%d"))
+                path_folder = "ArrayFoo\\saved_frames\\" + folder_name
                 strtime = str(dt_object.strftime("%Y-%m-%d_%H-%M-%S"))
-                fn = "ArrayFoo\\Saved_frames" + folder_name + "\\Frame" + strtime + ".jpg"
-                print(fn)
+
+                if not os.path.exists(path_folder):
+                    os.makedirs(path_folder)
+
+                file_name = path_folder + "\\Frame" + strtime + ".jpg"
+
                 statistics = process_predictions(
                     predictions, config['NUM_classes'])
 
                 print("{}\tFound [{}] W  [{}] C".format(
                     strtime, statistics[0], statistics[1]))
 
-                cv.imwrite(fn, frame.numpy())
+                cv.imwrite(file_name, frame.numpy())
                 command = "GESTURES"+'\r'
 
             else:
