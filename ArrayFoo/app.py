@@ -4,6 +4,7 @@ import time
 import requests  # for Telegram bot notifications
 # import serial.tools.list_ports #for serial connection
 from datetime import datetime
+import json
 
 
 app = Flask(__name__)
@@ -58,17 +59,34 @@ def gen_frames():
                 folder_name = str(dt_object.strftime("%Y-%m-%d"))
                 path_folder = "ArrayFoo\\saved_frames\\" + folder_name
                 strtime = str(dt_object.strftime("%Y-%m-%d_%H-%M-%S"))
-
+                json_file = "ArrayFoo\\saved_json\\" + folder_name + ".json"
                 if not os.path.exists(path_folder):
                     os.makedirs(path_folder)
 
                 file_name = path_folder + "\\Frame" + strtime + ".jpg"
-
                 statistics = process_predictions(
                     predictions, config['NUM_classes'])
 
                 print("{}\tFound [{}] W  [{}] C".format(
                     strtime, statistics[0], statistics[1]))
+
+                data = {"Timestamp": strtime,
+                        "W": statistics[0], "C": statistics[1]}
+
+                if not os.path.exists(os.path.dirname(json_file)):
+                    os.makedirs(json_file)
+
+                if not os.path.exists(json_file):
+                    with open(json_file, "w") as f:
+                        json.dump([data], f)
+                        print("JSON Data created")
+                else:
+                    with open(json_file, "r+") as f:
+                        file_data = json.load(f)
+                        file_data.append(data)
+                        f.seek(0)
+                        json.dump(file_data, f)
+                        print("JSON Data Appended")
 
                 cv.imwrite(file_name, frame.numpy())
                 command = "GESTURES"+'\r'
@@ -112,7 +130,7 @@ def gen_boxframes():
                                              [0], tf.float32),
                                      pred[0], pred[1], pred[2])
 
-            cv.imwrite("boxed_frames/FRAMES_2/Frame" +
+            cv.imwrite("ArrayFoo\\boxed_frames\\FRAMES_3" +
                        str(i)+".jpg", frame.numpy())
             i += 1
 
