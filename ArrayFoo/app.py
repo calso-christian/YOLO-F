@@ -2,14 +2,13 @@ from flask import Flask, redirect, url_for, render_template, Response
 from model import *
 import time
 import requests  # for Telegram bot notifications
-# import serial.tools.list_ports #for serial connection
+import serial.tools.list_ports #for serial connection
 from datetime import datetime
 import json
 
 
 app = Flask(__name__)
 
-'''
 # PySerial communication with Arduino
 ports = serial.tools.list_ports.comports()
 serialInst = serial.Serial()
@@ -26,13 +25,17 @@ for x in range(0,len(portsList)):
 serialInst.baudrate = 115200
 serialInst.port = portVar
 serialInst.open()
-'''
+
+
 # camera = cv.VideoCapture(
 # r"C:\Users\Christian Paul\Downloads\WIN_20230503_14_14_13_Pro.mp4")
 camera = cv.VideoCapture(0, cv.CAP_DSHOW)
 camera.set(cv.CAP_PROP_FRAME_WIDTH, 4000)
 camera.set(cv.CAP_PROP_FRAME_HEIGHT, 4000)
 
+# Replace YOUR_BOT_TOKEN and CHAT_ID with your actual bot token and chat ID
+bot_token = "6279869007:AAFisEDYs0KyOZblRHdl69JIpwHD75vFc4k"
+chat_id = "-1001944030203"
 
 def gen_frames():
     while True:
@@ -72,6 +75,11 @@ def gen_frames():
 
                 data = {"Timestamp": strtime,
                         "W": statistics[0], "C": statistics[1]}
+                
+                if (statistics[0] > statistics[1]):
+                    command = "W"+'\r'
+                elif (statistics[0] < statistics[1]):
+                    command = "C"+'\r'
 
                 if not os.path.exists(os.path.dirname(json_file)):
                     os.makedirs(json_file)
@@ -89,10 +97,21 @@ def gen_frames():
                         print("JSON Data Appended")
 
                 cv.imwrite(file_name, frame.numpy())
-                command = "GESTURES"+'\r'
+                
+                # Send a photo
+                url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+                files = {"photo": open(file_name, "rb")}
+                data = {"chat_id": chat_id}
+                response = requests.post(url, files=files, data=data)
+
+                # Check the response
+                if response.status_code == 200:
+                    print("Image sent successfully!")
+                else:
+                    print(f"Failed to send image. Error code: {response.status_code}")
 
             else:
-                command = None
+                command = "NONE"+'\r'
 
             ret, buffer = cv.imencode('.jpg', frame.numpy())
             frame = buffer.tobytes()
@@ -100,7 +119,8 @@ def gen_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-        # serialInst.write(command.encode('utf-8'))
+        serialInst.write(command.encode('utf-8'))
+        print(command)
 
 
 def process_predictions(predictions, NUM_classes):
