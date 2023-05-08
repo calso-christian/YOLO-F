@@ -98,7 +98,7 @@ html{
     height: 552px;
 }
 
-/*** Aler ***/
+/*** Alert ****************************************/
 
 .alertcontainer{
     background-color: var(--cont-color);
@@ -106,7 +106,11 @@ html{
     height: 700px;
     border-radius: 5%;
     position: relative;
+    overflow: hidden;
+    overflow-y: scroll;
+    padding-bottom: 10px 0;
 }
+
 
 h3{
     font-family: 'Inter', sans-serif;
@@ -138,3 +142,115 @@ h3{
     left: 200px;
     font-size: 36px;
 }
+
+
+table{
+    font-family: 'Inter', sans-serif;
+    color: var(--text-color);
+    width:  1000px;
+    margin: 30px auto;
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 80%; 
+    height: 50%;
+    overflow-y: scroll;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+table th{
+    padding: 10px 0;
+    background-color: var(--bg-color);
+    border:  thin solid #d4d4d4;
+}
+
+table td{
+    padding: 10px;
+    border:  thin solid #d4d4d4;
+    width: 18%;
+    text-align: center;
+    background-color: var(--bg-color);
+}
+
+table img{
+    width:  70%;
+}
+
+table td.total-price{
+    font-weight: bold;
+    font-size: 22px;
+}
+
+table a{
+    text-decoration: none;
+    color: darkred;
+    background-color: var(--bg-color);
+    padding: 10px 15px;
+}
+
+table a:active{
+    background-color: #ccf4d6;
+    color:  green;
+}
+
+table select{
+    padding: 10px;
+    width:  200px;
+    font-size: 16px;
+    border: thin solid #d4d4d4;
+    background-color: transparent;
+}
+
+table select:focus{
+    outline: none;
+}
+
+table img{
+    width:  60%;
+}
+
+table th{
+    background-color: var(--bg-color);
+}
+
+/* Hide the default scrollbar */
+::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Define the styles for the scrollbar track */
+  ::-webkit-scrollbar-track {
+    background-color: #f5f5f5;
+  }
+  
+  /* Define the styles for the scrollbar thumb */
+  ::-webkit-scrollbar-thumb {
+    background-color: #aaa;
+    border-radius: 20px;
+  }
+  
+  /* Define the styles for the scrollbar thumb on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #999;
+  }
+
+  table::after, table::before{
+    content: "";
+    display: block;
+    height: 20px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    background-color: var(--contcolor);
+    z-index: -1;
+  }
+
+  table::before{
+    top: -20px;
+  }
+
+  table::after{
+    bottom: -20px;
+  }
