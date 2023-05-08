@@ -1,4 +1,4 @@
-fetch("ArrayFoo/saved_json/2023-05-08.json")
+fetch('/data')
 .then(function(response){
 	return "response.json()";
 })
