@@ -2,7 +2,7 @@ from flask import Flask, redirect, url_for, render_template, Response, jsonify
 from model import *
 import time
 import requests  # for Telegram bot notifications
-#import serial.tools.list_ports #for serial connection
+# import serial.tools.list_ports #for serial connection
 from datetime import datetime
 import json
 
@@ -26,11 +26,18 @@ serialInst.baudrate = 115200
 serialInst.port = portVar
 serialInst.open()"""
 
+
+timestamp = time.time()
+dt_object = datetime.fromtimestamp(timestamp)
+json_data_file = str(dt_object.strftime("%Y-%m-%d"))
+
+
 @app.route('/data')
 def get_data():
-    with open('ArrayFoo\saved_json\2023-05-08.json', 'r') as f:
-        data = f.read()
+    with open('ArrayFoo\\static\\saved_json\\' + json_data_file + ".json", 'r') as f:
+        data = json.load(f)
     return jsonify(data)
+
 
 # camera = cv.VideoCapture(
 # r"C:\Users\Christian Paul\Downloads\WIN_20230503_14_14_13_Pro.mp4")
@@ -41,6 +48,7 @@ camera.set(cv.CAP_PROP_FRAME_HEIGHT, 4000)
 # Replace YOUR_BOT_TOKEN and CHAT_ID with your actual bot token and chat ID
 bot_token = "6279869007:AAFisEDYs0KyOZblRHdl69JIpwHD75vFc4k"
 chat_id = "-1001944030203"
+
 
 def gen_frames():
     while True:
@@ -65,9 +73,9 @@ def gen_frames():
                 dt_object = datetime.fromtimestamp(timestamp)
 
                 folder_name = str(dt_object.strftime("%Y-%m-%d"))
-                path_folder = "ArrayFoo\\saved_frames\\" + folder_name
+                path_folder = "ArrayFoo\\static\\saved_frames\\" + folder_name
                 strtime = str(dt_object.strftime("%Y-%m-%d_%H-%M-%S"))
-                json_file = "ArrayFoo\\saved_json\\" + folder_name + ".json"
+                json_file = "ArrayFoo\\static\\saved_json\\" + folder_name + ".json"
                 if not os.path.exists(path_folder):
                     os.makedirs(path_folder)
 
@@ -80,7 +88,7 @@ def gen_frames():
 
                 data = {"Timestamp": strtime,
                         "W": statistics[0], "C": statistics[1]}
-                
+
                 if (statistics[0] > statistics[1]):
                     command = "W"+'\r'
                 elif (statistics[0] < statistics[1]):
@@ -102,18 +110,19 @@ def gen_frames():
                         print("JSON Data Appended")
 
                 cv.imwrite(file_name, frame.numpy())
-                
+
                 # Send a photo
-                url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
-                files = {"photo": open(file_name, "rb")}
-                data = {"chat_id": chat_id}
-                response = requests.post(url, files=files, data=data)
+                #url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+                #files = {"photo": open(file_name, "rb")}
+                #data = {"chat_id": chat_id}
+                #response = requests.post(url, files=files, data=data)
 
                 # Check the response
-                if response.status_code == 200:
-                    print("Image sent successfully!")
-                else:
-                    print(f"Failed to send image. Error code: {response.status_code}")
+                # if response.status_code == 200:
+                #    print("Image sent successfully!")
+                # else:
+                #    print(
+                #        f"Failed to send image. Error code: {response.status_code}")
 
             else:
                 command = "NONE"+'\r'
@@ -124,8 +133,8 @@ def gen_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-       #serialInst.write(command.encode('utf-8'))
-        #print(command)
+       # serialInst.write(command.encode('utf-8'))
+        # print(command)
 
 
 def process_predictions(predictions, NUM_classes):

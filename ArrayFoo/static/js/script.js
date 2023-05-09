@@ -1,22 +1,24 @@
+
+
 fetch('/data')
 .then(function(response){
-	return "response.json()";
+	return response.json();
 })
 .then(function(detections){
 	let placeholder = document.querySelector("#data-output");
 	let out = "";
-	//for(let detection of detections){
+
+
 	for(let i = detections.length - 1; i >= 0; i--){
 		let detection = detections[i];
 		let foldername = detection.Timestamp.split("_")[0];
 		out += `
 			<tr>
-				<td><a href="file:///ArrayFoo/saved_frames/${foldername}/Frame${detection.Timestamp}.jpg" target="_blank">${detection.Timestamp}</a></td>
+				<td><a href="file:///ArrayFoo/static/saved_frames/${foldername}/Frame${detection.Timestamp}.jpg" target="_blank">${detection.Timestamp}</a></td>
 				<td>${detection.W}</td>
 				<td>${detection.C}</td>
 			</tr>
 		`;
-		console.log(foldername)
 	}
 
 	placeholder.innerHTML = out;
