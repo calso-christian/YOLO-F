@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, render_template, Response
+from flask import Flask, redirect, url_for, render_template, Response, jsonify
 from model import *
 import time
 import requests  # for Telegram bot notifications
@@ -26,6 +26,11 @@ serialInst.baudrate = 115200
 serialInst.port = portVar
 serialInst.open()"""
 
+@app.route('/data')
+def get_data():
+    with open('ArrayFoo\saved_json\2023-05-08.json', 'r') as f:
+        data = f.read()
+    return jsonify(data)
 
 # camera = cv.VideoCapture(
 # r"C:\Users\Christian Paul\Downloads\WIN_20230503_14_14_13_Pro.mp4")
