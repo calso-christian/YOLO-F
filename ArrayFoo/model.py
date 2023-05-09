@@ -386,4 +386,13 @@ model = YOLOv3_MOD(*structure, config['INPUT_shape'],
 model.load_weights(
     r"ArrayFoo\weights\A\A_2.h5")
 
-# Best A_2, B_5
+# New Models
+# Xtra Small : N_1, N_2
+#      Small : A_4, A_5, A_6
+
+
+# Best Models
+
+# Xtra Small : 'ArrayFoo\weights\N\N_2.h5
+#      Small : 'ArrayFoo\weights\A\A_2.h5'
+#      Large : 'ArrayFoo\weights\B\B_5.h5
