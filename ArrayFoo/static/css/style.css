@@ -58,7 +58,7 @@ html{
 
 .screencontainer > .cctvlogo {
     position: absolute;
-    top: 16px;
+    top: 26px;
     left: 80px;
   }
 
@@ -67,19 +67,19 @@ html{
     font-family:'Inter', sans-serif;
     font-size: 36px;
     position: absolute;
-    top: -20px;
+    top: -10px;
     left: 140px;
 }
 
 .screencontainer > .signal {
     position: absolute;
-    top: 16px;
+    top: 26px;
     right: 160px;
   }
 
   .screencontainer > .live {
     position: absolute;
-    top: 28px;
+    top: 38px;
     right: 80px;
   }
 
@@ -93,7 +93,9 @@ html{
 }
 
 .screen{
+    position: relative;
     background-color: black;
+    top: 25px;
     width: 90%;
     height: 552px;
 }
