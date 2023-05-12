@@ -5,6 +5,7 @@ import requests  # for Telegram bot notifications
 # import serial.tools.list_ports #for serial connection
 from datetime import datetime
 import json
+from flask import send_from_directory
 
 
 app = Flask(__name__)
@@ -27,20 +28,23 @@ serialInst.port = portVar
 serialInst.open()"""
 
 
-timestamp = time.time()
-dt_object = datetime.fromtimestamp(timestamp)
-json_data_file = str(dt_object.strftime("%Y-%m-%d"))
-
-
 @app.route('/data')
 def get_data():
+
+    timestamp = time.time()
+    dt_object = datetime.fromtimestamp(timestamp)
+    json_data_file = str(dt_object.strftime("%Y-%m-%d"))
+
     with open('ArrayFoo\\static\\saved_json\\' + json_data_file + ".json", 'r') as f:
         data = json.load(f)
     return jsonify(data)
 
 
-# camera = cv.VideoCapture(
-# r"C:\Users\Christian Paul\Downloads\WIN_20230503_14_14_13_Pro.mp4")
+@app.route('/images/<path:image_path>')
+def get_image(image_path):
+    return send_from_directory('static', image_path)
+
+
 camera = cv.VideoCapture(0, cv.CAP_DSHOW)
 camera.set(cv.CAP_PROP_FRAME_WIDTH, 4000)
 camera.set(cv.CAP_PROP_FRAME_HEIGHT, 4000)
@@ -146,44 +150,15 @@ def process_predictions(predictions, NUM_classes):
     return statistics
 
 
-def gen_boxframes():
-    i = 0
-    while True:
-
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
-            frame = cv.flip(frame, 1)
-            frame_resized = tf.image.resize_with_pad(
-                frame, config['INPUT_shape'][0], config['INPUT_shape'][0])[tf.newaxis, ...]
-            pred = model.predict(frame_resized)
-
-            frame = draw_predictions(frame_resized,
-                                     tf.cast(config['INPUT_shape']
-                                             [0], tf.float32),
-                                     pred[0], pred[1], pred[2])
-
-            cv.imwrite("ArrayFoo\\boxed_frames\\FRAMES_3" +
-                       str(i)+".jpg", frame.numpy())
-            i += 1
-
-
-def gen_vid():
-    fourcc = cv.VideoWriter_fourcc(*'mp4v')
-    video = cv.VideoWriter('video1.mp4', fourcc, 30, (768, 768))
-
-    for i in range(0, 2330):
-        img = cv.imread("boxed_frames\FRAMES_2\Frame" + str(i) + ".jpg")
-        print(f"Read frame {i}")
-        video.write(img)
-        print(f"Written frame {i}")
-
-    video.release()
-
-
 @app.route('/')
 def index():
+    timestamp = time.time()
+    dt_object = datetime.fromtimestamp(timestamp)
+    json_data_file = str(dt_object.strftime("%Y-%m-%d"))
+    json_file = 'ArrayFoo\\static\\saved_json\\' + json_data_file + ".json"
+    if not os.path.exists(os.path.dirname(json_file)):
+        os.makedirs(json_file)
+
     return render_template('index.html')
 
 

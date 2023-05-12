@@ -1,6 +1,7 @@
 
+setInterval(() => {
 
-fetch('/data')
+  fetch('/data')
 .then(function(response){
 	return response.json();
 })
@@ -14,7 +15,7 @@ fetch('/data')
 		let foldername = detection.Timestamp.split("_")[0];
 		out += `
 			<tr>
-				<td><a href="file:///ArrayFoo/static/saved_frames/${foldername}/Frame${detection.Timestamp}.jpg" target="_blank">${detection.Timestamp}</a></td>
+				<td><a href="/images/saved_frames/${foldername}/Frame${detection.Timestamp}.jpg" target="_blank">${detection.Timestamp}${detection.Timestamp}</a></td>
 				<td>${detection.W}</td>
 				<td>${detection.C}</td>
 			</tr>
@@ -24,9 +25,7 @@ fetch('/data')
 	placeholder.innerHTML = out;
 });
 
-//fetch data every 2 seconds
-setInterval(fetch,2000);
-
+}, 2000)
 
 //CLOCK CODE -----------------------------------------------------------------------------
 const timeElement = document.querySelector(".clock");
