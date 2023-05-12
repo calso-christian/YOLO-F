@@ -184,12 +184,16 @@ table td.total-price{
 }
 
 table a{
-    text-decoration: none;
     color: var(--text-color);
     line-height: 30px;
     background-color: var(--bg-color);
     padding: 10px 15px;
 }
+
+table a:hover{
+    color: #FF3838;
+}
+
 
 
 table select{
