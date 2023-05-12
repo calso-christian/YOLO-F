@@ -185,15 +185,12 @@ table td.total-price{
 
 table a{
     text-decoration: none;
-    color: darkred;
+    color: var(--text-color);
+    line-height: 30px;
     background-color: var(--bg-color);
     padding: 10px 15px;
 }
 
-table a:active{
-    background-color: #ccf4d6;
-    color:  green;
-}
 
 table select{
     padding: 10px;
@@ -254,3 +251,4 @@ table th{
   table::after{
     bottom: -20px;
   }
+  
