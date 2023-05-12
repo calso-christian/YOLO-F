@@ -2,16 +2,17 @@ from flask import Flask, redirect, url_for, render_template, Response, jsonify
 from model import *
 import time
 import requests  # for Telegram bot notifications
-# import serial.tools.list_ports #for serial connection
+import serial.tools.list_ports #for serial connection
 from datetime import datetime
 import json
 from flask import send_from_directory
+import threading
 
 
 app = Flask(__name__)
 
 # PySerial communication with Arduino
-"""ports = serial.tools.list_ports.comports()
+ports = serial.tools.list_ports.comports()
 serialInst = serial.Serial()
 portsList = []
 for onePort in ports:
@@ -25,7 +26,7 @@ for x in range(0,len(portsList)):
         print(portVar)
 serialInst.baudrate = 115200
 serialInst.port = portVar
-serialInst.open()"""
+serialInst.open()
 
 
 @app.route('/data')
@@ -52,6 +53,19 @@ camera.set(cv.CAP_PROP_FRAME_HEIGHT, 4000)
 # Replace YOUR_BOT_TOKEN and CHAT_ID with your actual bot token and chat ID
 bot_token = "6279869007:AAFisEDYs0KyOZblRHdl69JIpwHD75vFc4k"
 chat_id = "-1001944030203"
+
+def send_image_notif(image_path):
+    # Send a photo
+    url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+    files = {"photo": open(image_path, "rb")}
+    data = {"chat_id": chat_id}
+    response = requests.post(url, files=files, data=data)
+
+    # Check the response
+    if response.status_code == 200:
+        print("Image sent successfully!")
+    else:
+        print(f"Failed to send image. Error code: {response.status_code}")
 
 
 def gen_frames():
@@ -114,19 +128,8 @@ def gen_frames():
                         print("JSON Data Appended")
 
                 cv.imwrite(file_name, frame.numpy())
-
-                # Send a photo
-                #url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
-                #files = {"photo": open(file_name, "rb")}
-                #data = {"chat_id": chat_id}
-                #response = requests.post(url, files=files, data=data)
-
-                # Check the response
-                # if response.status_code == 200:
-                #    print("Image sent successfully!")
-                # else:
-                #    print(
-                #        f"Failed to send image. Error code: {response.status_code}")
+                notification_thread = threading.Thread(target=send_image_notif, args=(file_name,))
+                notification_thread.start()
 
             else:
                 command = "NONE"+'\r'
@@ -137,7 +140,7 @@ def gen_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-       # serialInst.write(command.encode('utf-8'))
+        serialInst.write(command.encode('utf-8'))
         # print(command)
 
 
