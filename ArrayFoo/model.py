@@ -355,8 +355,6 @@ class Post_Process(keras.layers.Layer):
 
 def YOLOv3_MOD(Backbone, Neck, Head, SHAPE_input, NUM_anchors, NUM_classes, training=True):
     x = inputs = Input(SHAPE_input, name='input')
-    if not training:
-        x = tf.image.resize_with_pad(x, SHAPE_input[0], SHAPE_input[1])
     x = tf.keras.layers.Rescaling(scale=1./255.)(x)
     x = Backbone()(x)
     y_1, y_2, y_3 = Neck(x)
@@ -372,7 +370,7 @@ def YOLOv3_MOD(Backbone, Neck, Head, SHAPE_input, NUM_anchors, NUM_classes, trai
                                config['PARAMS_GS_alpha'][level],
                                config['PARAMS_WH_power'][level],
                                training=False)(y[level]) for level in [0, 1, 2]]
-        y = Post_Process(NUM_classes, 20, 0.35, 0.75)(y)
+        y = Post_Process(NUM_classes, 15, 0.25, 0.75)(y)
 
     return Model(inputs, y, name='YOLOv3_MOD')
 
