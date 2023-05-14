@@ -2,7 +2,9 @@ from flask import Flask, redirect, url_for, render_template, Response, jsonify
 from model import *
 import time
 import requests  # for Telegram bot notifications
+'''
 import serial.tools.list_ports #for serial connection
+'''
 from datetime import datetime
 import json
 from flask import send_from_directory
@@ -11,6 +13,7 @@ import threading
 
 app = Flask(__name__)
 
+'''
 # PySerial communication with Arduino
 ports = serial.tools.list_ports.comports()
 serialInst = serial.Serial()
@@ -27,7 +30,7 @@ for x in range(0,len(portsList)):
 serialInst.baudrate = 115200
 serialInst.port = portVar
 serialInst.open()
-
+'''
 
 @app.route('/data')
 def get_data():
@@ -127,9 +130,11 @@ def gen_frames():
                         json.dump(file_data, f)
                         print("JSON Data Appended")
 
+                '''
                 cv.imwrite(file_name, frame.numpy())
                 notification_thread = threading.Thread(target=send_image_notif, args=(file_name,))
                 notification_thread.start()
+                '''
 
             else:
                 command = "NONE"+'\r'
@@ -140,7 +145,7 @@ def gen_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-        serialInst.write(command.encode('utf-8'))
+        '''serialInst.write(command.encode('utf-8'))'''
         # print(command)
 
 
@@ -149,7 +154,6 @@ def process_predictions(predictions, NUM_classes):
     for pred in predictions:
         label = pred[0]
         statistics[label] += 1
-        # PERFORM ARDUINO PROCESSING PER LABEL HERE
     return statistics
 
 

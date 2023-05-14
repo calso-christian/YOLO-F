@@ -279,38 +279,36 @@ class Output_Activation(tf.keras.layers.Layer):
 
 
 class EfficientNetV2:
-    def __init__(self, mode='EfficientNetV2S', trainable=True):
-        if mode == 'EfficientNetV2B1':
-            self.model = tf.keras.applications.efficientnet_v2.EfficientNetV2B1
-        elif mode == 'EfficientNetV2B2':
-            self.model = tf.keras.applications.efficientnet_v2.EfficientNetV2B2
-        elif mode == 'EfficientNetV2B3':
-            self.model = tf.keras.applications.efficientnet_v2.EfficientNetV2B3
-        else:
-            mode = 'EfficientNetV2S'
-            self.model = tf.keras.applications.efficientnet_v2.EfficientNetV2S
-
-        self.model = self.model(include_top=False,
-                                weights='imagenet',
-                                input_tensor=None,
-                                input_shape=None,
-                                include_preprocessing=False,
-                                classifier_activation=None)
-        self.mode = mode
-        self.trainable = trainable
-
-    def __call__(self):
-        x = inputs = Input([None, None, 3])
-        m = Model(inputs=self.model.inputs,
-                  outputs=self.model.get_layer('block2c_add').output)
-        n = Model(inputs=m.inputs, outputs=self.model.get_layer(
-            'block4a_expand_activation').output)
-        o = Model(inputs=n.inputs, outputs=(m.output, n.output,
-                  self.model.get_layer('block6a_expand_activation').output))
-        x = o(x)
-        model = Model(inputs=inputs, outputs=x, name=self.mode)
-        model.trainable = self.trainable
-        return model
+  def __init__(self, mode='EfficientNetV2S', trainable=True):
+    self.config = ['block2c_add', 'block4a_expand_activation', 'block6a_expand_activation']
+    if mode == 'EfficientNetV2B0': 
+        self.model = tf.keras.applications.efficientnet_v2.EfficientNetV2B0
+        self.config = ['block2b_add', 'block4a_expand_activation', 'block6a_expand_activation']
+    elif mode == 'EfficientNetV2B1': self.model = tf.keras.applications.efficientnet_v2.EfficientNetV2B1
+    elif mode == 'EfficientNetV2B2': self.model = tf.keras.applications.efficientnet_v2.EfficientNetV2B2
+    elif mode == 'EfficientNetV2B3': self.model = tf.keras.applications.efficientnet_v2.EfficientNetV2B3
+    else:
+      mode = 'EfficientNetV2S'
+      self.model = tf.keras.applications.efficientnet_v2.EfficientNetV2S
+    
+    self.model = self.model(include_top=False,
+                            weights=None,
+                            input_tensor=None,
+                            input_shape=None,
+                            include_preprocessing=False,
+                            classifier_activation=None)
+    self.mode = mode
+    self.trainable = trainable
+  
+  def __call__(self):
+    x = inputs = Input([None, None, 3])
+    m = Model(inputs=self.model.inputs, outputs=self.model.get_layer(self.config[0]).output)
+    n = Model(inputs=m.inputs, outputs = self.model.get_layer(self.config[1]).output)
+    o = Model(inputs=n.inputs, outputs=(m.output, n.output, self.model.get_layer(self.config[2]).output))
+    x = o(x)
+    model = Model(inputs=inputs, outputs=x, name=self.mode)
+    model.trainable = self.trainable
+    return model
 
 
 class Post_Process(keras.layers.Layer):
@@ -374,25 +372,28 @@ def YOLOv3_MOD(Backbone, Neck, Head, SHAPE_input, NUM_anchors, NUM_classes, trai
                                config['PARAMS_GS_alpha'][level],
                                config['PARAMS_WH_power'][level],
                                training=False)(y[level]) for level in [0, 1, 2]]
-        y = Post_Process(NUM_classes, 20, 0.35, 0.55)(y)
+        y = Post_Process(NUM_classes, 20, 0.35, 0.75)(y)
 
     return Model(inputs, y, name='YOLOv3_MOD')
-
-
+'''
+architecture = {
+  'backbone': 'EfficientNetV2B0',
+  'SPPF_C': 256,
+  'Neck_C': [64, 128],
+  'Det_Blocks': 1,
+  'Head_Blocks': 1,
+  'Head_C': 128
+}
+'''
 structure = [EfficientNetV2(mode=architecture['backbone'], trainable=True), PAN(
     Conv_SiLU), Decoupled_Head]
 model = YOLOv3_MOD(*structure, config['INPUT_shape'],
                    config['ANCHORS_shape'][1], config['NUM_classes'], training=False)
 model.load_weights(
-    r"ArrayFoo\weights\A\A_2.h5")
-
-# New Models
-# Xtra Small : N_1, N_2
-#      Small : A_4, A_5, A_6
+    r"ArrayFoo\weights\A\A_10.h5")
 
 
-# Best Models
+# NEW MODELS
 
-# Xtra Small : 'ArrayFoo\weights\N\N_2.h5
-#      Small : 'ArrayFoo\weights\A\A_2.h5'
-#      Large : 'ArrayFoo\weights\B\B_5.h5
+# N_1
+# A_10, A_11
