@@ -82,17 +82,13 @@ def gen_frames():
             frame_resized = tf.image.resize_with_pad(
                 frame, config['INPUT_shape'][0], config['INPUT_shape'][0])[tf.newaxis, ...]
             pred = model.predict(frame_resized, verbose=0)
-
-            frame, predictions = draw_predictions(frame_resized,
-                                                  tf.cast(
-                                                      config['INPUT_shape'][0], tf.float32),
+            frame, predictions = draw_predictions(frame_resized, 
+                                                  tf.cast(config['INPUT_shape'][0], tf.float32),
                                                   pred[0], pred[1], pred[2])
-            #command = "NONE"+'\r'
 
-            if tf.reduce_any(pred[0][..., 0] > 0.0):
+            if predictions != None:
                 timestamp = time.time()
                 dt_object = datetime.fromtimestamp(timestamp)
-
                 folder_name = str(dt_object.strftime("%Y-%m-%d"))
                 path_folder = "ArrayFoo\\static\\saved_frames\\" + folder_name
                 strtime = str(dt_object.strftime("%Y-%m-%d_%H-%M-%S"))
@@ -101,14 +97,11 @@ def gen_frames():
                     os.makedirs(path_folder)
 
                 file_name = path_folder + "\\Frame" + strtime + ".jpg"
-                statistics = process_predictions(
-                    predictions, config['NUM_classes'])
+                statistics = process_predictions(predictions, config['NUM_classes'])
 
-                print("{}\tFound [{}] W  [{}] C".format(
-                    strtime, statistics[0], statistics[1]))
+                print("{}\tFound [{}] W  [{}] C".format(strtime, statistics[0], statistics[1]))
 
-                data = {"Timestamp": strtime,
-                        "W": statistics[0], "C": statistics[1]}
+                data = {"Timestamp": strtime, "W": statistics[0], "C": statistics[1]}
 
                 if (statistics[0] > statistics[1]):
                     command = "W"+'\r'
