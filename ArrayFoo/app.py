@@ -1,6 +1,7 @@
 from flask import Flask, redirect, url_for, render_template, Response, jsonify
 from model import *
 import time
+import os
 import requests  # for Telegram bot notifications
 '''
 import serial.tools.list_ports #for serial connection
@@ -81,7 +82,7 @@ def gen_frames():
             frame = cv.flip(frame, 1)
             frame_resized = tf.image.resize_with_pad(
                 frame, config['INPUT_shape'][0], config['INPUT_shape'][0])[tf.newaxis, ...]
-            pred = model.predict(frame_resized, verbose=0)
+            pred = predict(model, frame_resized)
             frame, predictions = draw_predictions(frame_resized, 
                                                   tf.cast(config['INPUT_shape'][0], tf.float32),
                                                   pred[0], pred[1], pred[2])
