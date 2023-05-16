@@ -33,15 +33,6 @@ config = {
     'RES_variations': [1088, 1024, 896, 832, 768, 704, 640]
 }
 
-directory = {
-    'TRAIN_Annotations': '/kaggle/input/w-and-c-hand-signals-arrayfoo/Train/Annotations/',
-    'TRAIN_Images': '/kaggle/input/w-and-c-hand-signals-arrayfoo/Train/Images/',
-    'VALIDATION_Annotations': '/kaggle/input/w-and-c-hand-signals-arrayfoo/Validation/Annotations/',
-    'VALIDATION_Images': '/kaggle/input/w-and-c-hand-signals-arrayfoo/Validation/Images/',
-    'TEST_Annotations': '/kaggle/input/w-and-c-hand-signals-arrayfoo/Test/Annotations/',
-    'TEST_Images': '/kaggle/input/w-and-c-hand-signals-arrayfoo/Test/Images/',
-}
-
 colors = ['#FFA500', '#6A5ACD']
 
 def XYXY_to_YXYX(x):
