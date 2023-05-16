@@ -2,15 +2,17 @@ from flask import Flask, redirect, url_for, render_template, Response, jsonify
 from model import *
 import time
 import os
-import requests  # for Telegram bot notifications
-'''
-import serial.tools.list_ports #for serial connection
-'''
+import requests
+#import serial.tools.list_ports #for serial connection
 from datetime import datetime
 import json
 from flask import send_from_directory
 import threading
 
+# Replace YOUR_BOT_TOKEN and CHAT_ID with your actual bot token and chat ID
+BOT_TOKEN = "6279869007:AAFisEDYs0KyOZblRHdl69JIpwHD75vFc4k"
+CHAT_ID = "-1001944030203"
+MODEL = tf.keras.models.load_model(r'ArrayFoo\weights\N\N_1')
 
 app = Flask(__name__)
 
@@ -33,48 +35,11 @@ serialInst.port = portVar
 serialInst.open()
 '''
 
-@app.route('/data')
-def get_data():
-
-    timestamp = time.time()
-    dt_object = datetime.fromtimestamp(timestamp)
-    json_data_file = str(dt_object.strftime("%Y-%m-%d"))
-
-    with open('ArrayFoo\\static\\saved_json\\' + json_data_file + ".json", 'r') as f:
-        data = json.load(f)
-    return jsonify(data)
-
-
-@app.route('/images/<path:image_path>')
-def get_image(image_path):
-    return send_from_directory('static', image_path)
-
-
-camera = cv.VideoCapture(0, cv.CAP_DSHOW)
-camera.set(cv.CAP_PROP_FRAME_WIDTH, 4000)
-camera.set(cv.CAP_PROP_FRAME_HEIGHT, 4000)
-
-# Replace YOUR_BOT_TOKEN and CHAT_ID with your actual bot token and chat ID
-bot_token = "6279869007:AAFisEDYs0KyOZblRHdl69JIpwHD75vFc4k"
-chat_id = "-1001944030203"
-
-def send_image_notif(image_path):
-    # Send a photo
-    url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
-    files = {"photo": open(image_path, "rb")}
-    data = {"chat_id": chat_id}
-    response = requests.post(url, files=files, data=data)
-
-    # Check the response
-    if response.status_code == 200:
-        print("Image sent successfully!")
-    else:
-        print(f"Failed to send image. Error code: {response.status_code}")
-
-
 def gen_frames():
+    camera = cv.VideoCapture(0, cv.CAP_DSHOW)
+    camera.set(cv.CAP_PROP_FRAME_WIDTH, 4000)
+    camera.set(cv.CAP_PROP_FRAME_HEIGHT, 4000)
     while True:
-
         success, frame = camera.read()
         if not success:
             break
@@ -82,7 +47,7 @@ def gen_frames():
             frame = cv.flip(frame, 1)
             frame_resized = tf.image.resize_with_pad(
                 frame, config['INPUT_shape'][0], config['INPUT_shape'][0])[tf.newaxis, ...]
-            pred = predict(model, frame_resized)
+            pred = predict(MODEL, frame_resized)
             frame, predictions = draw_predictions(frame_resized, 
                                                   tf.cast(config['INPUT_shape'][0], tf.float32),
                                                   pred[0], pred[1], pred[2])
@@ -115,21 +80,18 @@ def gen_frames():
                 if not os.path.exists(json_file):
                     with open(json_file, "w") as f:
                         json.dump([data], f)
-                        print("JSON Data created")
                 else:
                     with open(json_file, "r+") as f:
                         file_data = json.load(f)
                         file_data.append(data)
                         f.seek(0)
                         json.dump(file_data, f)
-                        print("JSON Data Appended")
 
                 '''
                 cv.imwrite(file_name, frame.numpy())
                 notification_thread = threading.Thread(target=send_image_notif, args=(file_name,))
                 notification_thread.start()
                 '''
-
             else:
                 command = "NONE"+'\r'
 
@@ -139,9 +101,7 @@ def gen_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-        '''serialInst.write(command.encode('utf-8'))'''
-        # print(command)
-
+        #serialInst.write(command.encode('utf-8'))
 
 def process_predictions(predictions, NUM_classes):
     statistics = [0 for _ in range(NUM_classes)]
@@ -150,6 +110,18 @@ def process_predictions(predictions, NUM_classes):
         statistics[label] += 1
     return statistics
 
+def send_image_notif(image_path):
+    # Send a photo
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
+    files = {"photo": open(image_path, "rb")}
+    data = {"chat_id": CHAT_ID}
+    response = requests.post(url, files=files, data=data)
+
+    # Check the response
+    if response.status_code == 200:
+        print("Image sent successfully!")
+    else:
+        print(f"Failed to send image. Error code: {response.status_code}")
 
 @app.route('/')
 def index():
@@ -162,11 +134,23 @@ def index():
 
     return render_template('index.html')
 
+@app.route('/images/<path:image_path>')
+def get_image(image_path):
+    return send_from_directory('static', image_path)
+
+@app.route('/data')
+def get_data():
+    timestamp = time.time()
+    dt_object = datetime.fromtimestamp(timestamp)
+    json_data_file = str(dt_object.strftime("%Y-%m-%d"))
+
+    with open('ArrayFoo\\static\\saved_json\\' + json_data_file + ".json", 'r') as f:
+        data = json.load(f)
+    return jsonify(data)
 
 @app.route('/video_frames')
 def videos():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
 
 if __name__ == '__main__':
     app.run()
